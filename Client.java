@@ -5,6 +5,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import javax.swing.ButtonGroup;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -42,12 +43,19 @@ public class Client extends javax.swing.JFrame {
 
         @Override
         public void run() {
+            String regEx_shut_down = ".*shut down.*";
             String data = null;
             try 
             {
+                System.out.println("Client: socket thread is waiting.");
                 while ((data = reader.readLine()) != null) 
                 {
-                     txtareaLog.append(data);
+                    txtareaLog.append(data+"\n");
+                    if(data.matches(regEx_shut_down)){
+                        Thread.sleep(1500);
+                        disconnect();
+                    }
+                    Thread.sleep(1);
                 }
            }catch(Exception ex) { }
         
@@ -57,7 +65,7 @@ public class Client extends javax.swing.JFrame {
     
     private void disconnect() {
         isConneceted = false;
-        txtareaLog.append(this.name + ", has disconnected.\n"); //this needs to be sent to the server.
+        writer.println(this.name + ", has disconnected.");
         txtareaLog.setText("");
         txtareaMsg.setText("");
         txtClientName.setText("");
@@ -71,6 +79,20 @@ public class Client extends javax.swing.JFrame {
             System.out.println("Error: problem Disconneting.");
         }
     }
+    
+    private void frame_recipientNotChosen(){
+        recipientNotChosen.setAlwaysOnTop(true);
+        recipientNotChosen.setSize(410, 180);
+        recipientNotChosen.setLocationRelativeTo(this);
+        recipientNotChosen.setVisible(true);
+    }
+    
+    private void frame_selectWhoSendTo(){
+        selectWhoSendTo.setAlwaysOnTop(true);
+        selectWhoSendTo.setSize(410, 180);
+        selectWhoSendTo.setLocationRelativeTo(this);
+        selectWhoSendTo.setVisible(true);
+    }
 
        
     /**
@@ -82,6 +104,13 @@ public class Client extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        sendingChoiseGroup = new javax.swing.ButtonGroup();
+        recipientNotChosen = new javax.swing.JFrame();
+        jLabel3 = new javax.swing.JLabel();
+        btn_frame_ok = new javax.swing.JButton();
+        selectWhoSendTo = new javax.swing.JFrame();
+        btn_frame2_ok = new javax.swing.JButton();
+        jLabel4 = new javax.swing.JLabel();
         jPanel1 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         txtName = new javax.swing.JTextField();
@@ -94,14 +123,81 @@ public class Client extends javax.swing.JFrame {
         jScrollPane3 = new javax.swing.JScrollPane();
         txtareaLog = new javax.swing.JTextArea();
         jPanel3 = new javax.swing.JPanel();
-        checkboxAllClients = new javax.swing.JCheckBox();
-        checkbox_oneClient = new javax.swing.JCheckBox();
-        txtClientName = new javax.swing.JTextField();
         btnSend = new javax.swing.JButton();
         btnClearMsg = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
         txtareaMsg = new javax.swing.JTextArea();
+        radiobtnAllClients = new javax.swing.JRadioButton();
+        radiobtnClient = new javax.swing.JRadioButton();
+        txtClientName = new javax.swing.JTextField();
         btnShowOnline = new javax.swing.JButton();
+
+        recipientNotChosen.setAlwaysOnTop(true);
+
+        jLabel3.setText("Please enter the name of the client you wish to send this message to.");
+
+        btn_frame_ok.setText("OK");
+        btn_frame_ok.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btn_frame_okActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout recipientNotChosenLayout = new javax.swing.GroupLayout(recipientNotChosen.getContentPane());
+        recipientNotChosen.getContentPane().setLayout(recipientNotChosenLayout);
+        recipientNotChosenLayout.setHorizontalGroup(
+            recipientNotChosenLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, recipientNotChosenLayout.createSequentialGroup()
+                .addContainerGap(20, Short.MAX_VALUE)
+                .addComponent(jLabel3)
+                .addContainerGap())
+            .addGroup(recipientNotChosenLayout.createSequentialGroup()
+                .addGap(165, 165, 165)
+                .addComponent(btn_frame_ok, javax.swing.GroupLayout.PREFERRED_SIZE, 77, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        recipientNotChosenLayout.setVerticalGroup(
+            recipientNotChosenLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(recipientNotChosenLayout.createSequentialGroup()
+                .addGap(21, 21, 21)
+                .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addComponent(btn_frame_ok, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
+        btn_frame2_ok.setText("OK");
+        btn_frame2_ok.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btn_frame2_okActionPerformed(evt);
+            }
+        });
+
+        jLabel4.setText("Please select who you want to send this message to.");
+
+        javax.swing.GroupLayout selectWhoSendToLayout = new javax.swing.GroupLayout(selectWhoSendTo.getContentPane());
+        selectWhoSendTo.getContentPane().setLayout(selectWhoSendToLayout);
+        selectWhoSendToLayout.setHorizontalGroup(
+            selectWhoSendToLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(selectWhoSendToLayout.createSequentialGroup()
+                .addGroup(selectWhoSendToLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(selectWhoSendToLayout.createSequentialGroup()
+                        .addGap(46, 46, 46)
+                        .addComponent(jLabel4))
+                    .addGroup(selectWhoSendToLayout.createSequentialGroup()
+                        .addGap(152, 152, 152)
+                        .addComponent(btn_frame2_ok, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(61, Short.MAX_VALUE))
+        );
+        selectWhoSendToLayout.setVerticalGroup(
+            selectWhoSendToLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(selectWhoSendToLayout.createSequentialGroup()
+                .addGap(44, 44, 44)
+                .addComponent(jLabel4)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 31, Short.MAX_VALUE)
+                .addComponent(btn_frame2_ok, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(29, 29, 29))
+        );
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -206,16 +302,12 @@ public class Client extends javax.swing.JFrame {
 
         jPanel3.setBorder(javax.swing.BorderFactory.createTitledBorder("Send Message:"));
 
-        checkboxAllClients.setText("All Clients");
-        checkboxAllClients.addActionListener(new java.awt.event.ActionListener() {
+        btnSend.setText("Send");
+        btnSend.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                checkboxAllClientsActionPerformed(evt);
+                btnSendActionPerformed(evt);
             }
         });
-
-        checkbox_oneClient.setText("Client:");
-
-        btnSend.setText("Send");
 
         btnClearMsg.setText("Clear");
         btnClearMsg.addActionListener(new java.awt.event.ActionListener() {
@@ -224,10 +316,25 @@ public class Client extends javax.swing.JFrame {
             }
         });
 
-        txtareaMsg.setEditable(false);
         txtareaMsg.setColumns(20);
         txtareaMsg.setRows(5);
         jScrollPane1.setViewportView(txtareaMsg);
+
+        sendingChoiseGroup.add(radiobtnAllClients);
+        radiobtnAllClients.setText("All clients");
+        radiobtnAllClients.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                radiobtnAllClientsActionPerformed(evt);
+            }
+        });
+
+        sendingChoiseGroup.add(radiobtnClient);
+        radiobtnClient.setText("Client:");
+        radiobtnClient.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                radiobtnClientActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -245,11 +352,12 @@ public class Client extends javax.swing.JFrame {
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(btnClearMsg))))
                     .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addComponent(checkboxAllClients, javax.swing.GroupLayout.PREFERRED_SIZE, 103, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(8, 8, 8)
-                        .addComponent(checkbox_oneClient)
+                        .addContainerGap()
+                        .addComponent(radiobtnAllClients)
+                        .addGap(18, 18, 18)
+                        .addComponent(radiobtnClient)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(txtClientName, javax.swing.GroupLayout.PREFERRED_SIZE, 92, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(txtClientName, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
@@ -263,8 +371,8 @@ public class Client extends javax.swing.JFrame {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(checkboxAllClients)
-                    .addComponent(checkbox_oneClient)
+                    .addComponent(radiobtnAllClients)
+                    .addComponent(radiobtnClient)
                     .addComponent(txtClientName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 96, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -272,6 +380,11 @@ public class Client extends javax.swing.JFrame {
         );
 
         btnShowOnline.setText("Show Online");
+        btnShowOnline.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnShowOnlineActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -297,9 +410,9 @@ public class Client extends javax.swing.JFrame {
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 13, Short.MAX_VALUE)
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnDissconnect)
                     .addComponent(btnShowOnline))
@@ -313,10 +426,6 @@ public class Client extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_txtNameActionPerformed
 
-    private void checkboxAllClientsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkboxAllClientsActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_checkboxAllClientsActionPerformed
-
     private void txtAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtAddressActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_txtAddressActionPerformed
@@ -326,7 +435,7 @@ public class Client extends javax.swing.JFrame {
     }//GEN-LAST:event_btnClearLogActionPerformed
 
     private void btnClearMsgActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClearMsgActionPerformed
-        // TODO add your handling code here:
+        txtareaMsg.setText("");
     }//GEN-LAST:event_btnClearMsgActionPerformed
 
     private void btnDissconnectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDissconnectActionPerformed
@@ -334,28 +443,31 @@ public class Client extends javax.swing.JFrame {
     }//GEN-LAST:event_btnDissconnectActionPerformed
 
     private void btnConnectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConnectActionPerformed
-        
+        String _connect  = "Connect", del = " ", end_line = "\n";
         if (!isConneceted) {
             // Getting Client's name & address from txt field:
-            this.name = txtClientName.getText();
-            this.ip = txtAddress.getText();
+            this.name = txtName.getText();
+            if(!txtAddress.getText().equals("")) this.ip = txtAddress.getText();
+            System.out.println("Client: connetcting to\tname: "+name+"\tip:"+ip);
             //not entering this 'if' when supposed too.
-            if (name.equals("") || ip.equals("")){
-                return;
-            }
+//            if (name.equals("") || ip.equals("")){
+//                return;
+//            }
             txtClientName.setEditable(false);
             txtAddress.setEditable(false);
 
             //Astablishing socket with the server:
             try {
+                System.out.println("Client: astablishing socket with the server..");
                 socket = new Socket(this.ip, this.port);   //establish the socket connection between the client and the server
                 writer = new PrintWriter(socket.getOutputStream(), true);  //open a PrintWriter on the socket
                 reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));  //open a BufferedReader on the socket
                 isConneceted = true;
                 
-                //txtareaLog.append(this.name + ", has connected\n");    //this should be sent to the server and the server will send it to all clients.
-                writer.println("Name " + name);
-                // closing 'writer', 'reader' and 'scoket' is done in disconnect(). 
+                System.out.println("Client: sending my name to sever..");
+                //Sending this client's name to server.
+                writer.println(_connect + del + name);
+                //closing 'writer', 'reader' and 'scoket' is done in disconnect(). 
             } catch (UnknownHostException e) {
                 this.txtareaLog.append("Don't know about this host\n");
                 disconnect();
@@ -364,13 +476,71 @@ public class Client extends javax.swing.JFrame {
                         + "the connection to this host\n" + e.getMessage());
                 disconnect();
             }
-      
+            System.out.println("Client: created socket listening thread.");
+            //Creating new thread that will listen to the sockett.
             listenThread();
         }
         else{
             this.txtareaLog.append(this.name + ", You are already conneceted!\n");
         }
     }//GEN-LAST:event_btnConnectActionPerformed
+
+    private void btnSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSendActionPerformed
+        String send_to = "send to ", everyone = "everyone",  del = " ", dots = ": ";
+        String msg = txtareaMsg.getText();
+        
+        //Case 1: 'msg' is to be sent to all clients:
+        if(radiobtnAllClients.isSelected()){
+            writer.println(send_to + everyone + dots +msg); 
+            txtareaMsg.setText("");
+        }
+        //Case 2: 'msg' is to be sent to the chosen client:
+        else if(radiobtnClient.isSelected()){
+            String resipient = txtClientName.getText();
+            //Case 2.1: No resipient was entered.
+            if(resipient.equals("")){
+                frame_recipientNotChosen();
+            }
+            //Case 2.2: send msg with resipient name.
+            else{ 
+            writer.println(send_to + resipient+del+dots+ msg);    // if wrong resipient name has been put in, server needs to tell this (sending) client.
+            txtareaMsg.setText("");
+            }
+        }
+        //Case 3:No radio buttons were selected.
+        else{
+            frame_selectWhoSendTo();
+        }
+        
+        // Determin who to send it too.
+        
+    }//GEN-LAST:event_btnSendActionPerformed
+
+    private void btnShowOnlineActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnShowOnlineActionPerformed
+        System.out.println("Client: I want a list of online clients please.");
+        String get_all_names = "get online client names";
+        writer.println(get_all_names);
+    }//GEN-LAST:event_btnShowOnlineActionPerformed
+
+    private void radiobtnAllClientsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_radiobtnAllClientsActionPerformed
+        txtareaMsg.setEnabled(true);
+        txtClientName.setText("");
+        txtClientName.setEditable(false);
+    }//GEN-LAST:event_radiobtnAllClientsActionPerformed
+
+    private void radiobtnClientActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_radiobtnClientActionPerformed
+        txtareaMsg.setEnabled(true);
+        System.out.println("Client: yuou cohbdbstr");
+        txtClientName.setEditable(true);
+    }//GEN-LAST:event_radiobtnClientActionPerformed
+
+    private void btn_frame_okActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_frame_okActionPerformed
+        recipientNotChosen.setVisible(false);
+    }//GEN-LAST:event_btn_frame_okActionPerformed
+
+    private void btn_frame2_okActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_frame2_okActionPerformed
+        selectWhoSendTo.setVisible(false);
+    }//GEN-LAST:event_btn_frame2_okActionPerformed
 
     /**
      * @param args the command line arguments
@@ -409,6 +579,11 @@ public class Client extends javax.swing.JFrame {
                 Client client = new Client();
                 client.setVisible(true);
                 client.setTitle("Client");
+                //To make the sending choise of sending to all clients or a specific one.
+                //This makes it only posible to select one of those choises.
+                ButtonGroup sending_group = new ButtonGroup();
+                sending_group.add(client.radiobtnClient);
+                sending_group.add(client.radiobtnAllClients);
             }
         });
     }
@@ -420,15 +595,22 @@ public class Client extends javax.swing.JFrame {
     private javax.swing.JButton btnDissconnect;
     private javax.swing.JButton btnSend;
     private javax.swing.JButton btnShowOnline;
-    private javax.swing.JCheckBox checkboxAllClients;
-    private javax.swing.JCheckBox checkbox_oneClient;
+    private javax.swing.JButton btn_frame2_ok;
+    private javax.swing.JButton btn_frame_ok;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JRadioButton radiobtnAllClients;
+    private javax.swing.JRadioButton radiobtnClient;
+    private javax.swing.JFrame recipientNotChosen;
+    private javax.swing.JFrame selectWhoSendTo;
+    private javax.swing.ButtonGroup sendingChoiseGroup;
     private javax.swing.JTextField txtAddress;
     private javax.swing.JTextField txtClientName;
     private javax.swing.JTextField txtName;

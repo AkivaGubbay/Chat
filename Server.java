@@ -16,13 +16,12 @@ import java.util.logging.Logger;
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 /**
  *
  * @author Akiva Gubbay
  */
 public class Server extends javax.swing.JFrame {
-    
+
     private int serverPort = 45000; // The port that this server is listening on
     private ServerSocket serverSocket = null;  // Server socket that will listen for incoming connections
     boolean hasStopped = false;
@@ -35,21 +34,31 @@ public class Server extends javax.swing.JFrame {
         initComponents();
     }
     
+    private static String splitMsgFromHeader(String input){
+        for(int i = 0; i< input.length();i++){
+            if(input.charAt(i) == ':'){
+                return input.substring(i+1,input.length());
+            }
+        }
+        return "msg needs to contain \':\'!!! in function splitMsgFromHeader().";
+     }
+
     class ClientHandler extends Thread {
+
         private Socket clientSocket;
         private Server server;
         private PrintWriter writer;
         private BufferedReader reader;
-        private String clientName = "";
-        
-       public ClientHandler(Socket socket, Server server){
-           this.clientSocket = socket;
-           this.server = server;
-       }
-       
-       public void closeConnection(){
-           this.sendToAll("Client " + "name" + "disconnected.\n");
-           server.connections.remove(this);
+        String clientName = "";
+
+        public ClientHandler(Socket socket, Server server) {
+            this.clientSocket = socket;
+            this.server = server;
+        }
+
+        public void closeConnection() {
+            this.sendToAll("Client " + this.clientName + " disconnected.");
+            server.connections.remove(this);
             try {
                 clientSocket.close();
                 writer.close();
@@ -58,39 +67,101 @@ public class Server extends javax.swing.JFrame {
                 System.out.println("Error: closing socket on server side.");
                 Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
             }
-       }
-       //Maybe synchronized..
-       public void closeAllConnections(){
-           for(int i = 0; i < server.connections.size(); i++){
-               ClientHandler ch = server.connections.get(i);
-               ch.closeConnection();
-           }
-       }
-       
-       //Maybe synchronized..
-       public void sendTo(String msg){
-           writer.println(msg);
-       }
-       
-       public void sendToAll(String msg){
-           for(int i = 0; i < server.connections.size(); i++){
-               ClientHandler ch = server.connections.get(i);
-               ch.sendTo(msg);
-           }
-       }
-       
+        }
+
+//        //Maybe synchronized..
+//        public void closeAllConnections() {
+//            for (int i = 0; i < server.connections.size(); i++) {
+//                ClientHandler ch = server.connections.get(i);
+//                txtArea_serverLog.append(clientName + "is shutting down.");
+//                ch.closeConnection();
+//            }
+//        }
+
+        //Maybe synchronized..
+        //returns true when the recipient name is valid, otherwise, false.
+        public boolean sendTo(String recipient, String msg) {
+            for(int i = 0; i <server.connections.size(); i++){
+                ClientHandler ch = server.connections.get(i);
+                String client_name_lower = ch.clientName.toLowerCase();
+                String recipient_name_lower = recipient.toLowerCase();
+                if(client_name_lower.equals(recipient_name_lower)){
+                    ch.writer.println(msg);
+                    return true;
+                }
+            }
+            this.writer.println("<System>: "+this.clientName+", there is no online client with the name.\'"+recipient+"\'.");
+            return false;
+        }
+        
+        public void sendTo(String msg) {    //This will be called only from sendtoAll().
+            writer.println(msg);
+        }
+
+        public void sendToAll(String msg) {
+            for (int i = 0; i < server.connections.size(); i++) {
+                ClientHandler ch = server.connections.get(i);
+                ch.sendTo(msg);
+            }
+        }
+
         @Override
-       public void run(){
+        public void run() {
+            String _connected = " connected.\n", _client = "Client ", del = " ", _is_online = "is online.",recipient_invalid = " attempted messaging offline client.\n",endline = "\n";   //maybe catch '\n' is needed..
+            String _forward_msg_from = "Forwarding message from client ", _to = " to ", _all = "all clients.\n", dots = ": ",get_all_names = "get online client names", _disconnected = "has disconnected.";
+            String regEx_send_to_all = "send to everyone.*", regEx_send_to_client = "send to .*";
+            String regEx_connect_client = "^Connect .*";
+            //maybe don't use magic numbers for the indices.. 
             try {
                 writer = new PrintWriter(clientSocket.getOutputStream(), true);
                 reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 String msg;
-                while (true) {//msg = reader.readLine()) != null
+                while (true) {
                     msg = reader.readLine();
-                    String[] parts = msg.split(" ");
-                    if(parts[0].equals("Name")){
-                        this.clientName = parts[1];
-                        this.sendToAll("Client " + clientName +"is online");
+                    System.out.println("Server thread: recieved- |" + msg + "|");
+       
+                    //Case 1: Client is establishing connection.
+                    if (msg.matches(regEx_connect_client)) {
+                        this.clientName = msg.split(del)[1];    // This is how server obtains the client's name.
+                        txtArea_serverLog.append(_client + clientName + _connected);
+                        String msg_with_header = clientName + del + _is_online; 
+                        this.sendToAll(msg_with_header);
+                    }
+                    //Case 2: Client sent msg to ALL clients.
+                    else if(msg.matches(regEx_send_to_all)){
+                        txtArea_serverLog.append(_forward_msg_from + clientName + _to + _all);
+                        sendToAll(this.clientName + dots + msg.substring(18,msg.length())); //get rid of magic number..
+                    }
+                    //Case 3: Client sent msg to a specific client.
+                    else if(msg.matches(regEx_send_to_client)){
+                        String recipient = msg.split(del)[2];
+                        String split_msg_header = splitMsgFromHeader(msg);
+                         boolean valid_name = sendTo(recipient, this.clientName + dots + split_msg_header);
+                         if(valid_name) txtArea_serverLog.append(_forward_msg_from + clientName + _to + recipient + endline);
+                         else txtArea_serverLog.append(_client + clientName + recipient_invalid);
+                    }
+                    //Case 4: send back all online client names.
+                    else if (msg.equals(get_all_names)) {
+                        System.out.println("Server: I need to send all client names.");
+                        if(server.connections.size() == 0){
+                            sendTo("<System>: No online clients.");
+                            return;
+                        }
+                        String client_names = "";
+                        int n = server.connections.size();
+                        System.out.println("number of online clients: "+n);
+                        for (int i = 0; i < n-1; i++) {
+                            client_names += server.connections.get(i).clientName+", ";
+                        }
+                        client_names += server.connections.get(n-1).clientName+".";
+                        System.out.println("list of client names: "+client_names);
+                        sendTo("<System>: Connected clients - "+client_names);
+                    //Case 5: client has disconnected.
+                    } else {
+                        if (server.serverSocket != null){
+                        txtArea_serverLog.append(_client + clientName+del+_disconnected+endline);
+                        sendToAll(this.clientName + dots + _disconnected);
+                        }
                     }
                     Thread.sleep(1);
                 }
@@ -99,7 +170,43 @@ public class Server extends javax.swing.JFrame {
             } catch (InterruptedException ex) {
                 Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
             }
-       }
+        }
+
+    }
+    // I needed this thread otherwise action listeners will not work because always in a while loop.
+    class NewClientListener implements Runnable{
+        Server server;
+        public NewClientListener(Server server){
+            this.server = server;
+        }
+        
+        
+        @Override
+        public void run() {
+           while (!hasStopped) { //need to sync 'hasStopped';
+            Socket clientSocket = null;  // socket created by accept
+            try {
+                System.out.println("Server: waiting for clients to connect..");
+                clientSocket = this.server.serverSocket.accept(); // wait for a client to connect
+                System.out.println("Server: connection created!");
+                Thread.sleep(100);
+            } catch (IOException e) {
+                if (hasStopped) {
+                    System.out.println("Error: server was stopped while waiting for clients to connect.\n");
+                    return;
+                }
+            } catch (InterruptedException ex) {
+                System.out.println("Error: server was stopped while waiting for clients to connect.\n problen with 'theard.sleep'");
+                return;
+            }
+            //new Thread( new WorkerRunnable(clientSocket, clientInfo)).start();
+            ClientHandler ch = new ClientHandler(clientSocket, this.server);
+            System.out.println("Server: new client thread starting..");
+            ch.start();
+            connections.add(ch);
+        }
+        
+        }
         
     }
 
@@ -169,6 +276,9 @@ public class Server extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btn_startActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_startActionPerformed
+
+        this.txtArea_serverLog.append("Server: activated.\n");
+        System.out.println("Server: activated.");
         try {
             serverSocket = new ServerSocket(serverPort);
         } catch (IOException ex) {
@@ -176,37 +286,30 @@ public class Server extends javax.swing.JFrame {
             txtArea_serverLog.append("Error: Cannot listen on this port.\n");
         }
         
-        while(!hasStopped){ //need to sync 'hasStopped';
-                Socket clientSocket = null;  // socket created by accept
-                try {
-                       clientSocket = this.serverSocket.accept(); // wait for a client to connect
-                       
-                } catch (IOException e) {
-                       if(hasStopped) {
-                           System.out.println("Error: server was stopped while waiting for clients to connect.\n");
-                                return;
-                       }
-                }
-                //new Thread( new WorkerRunnable(clientSocket, clientInfo)).start();
-                ClientHandler ch = new ClientHandler(clientSocket, this);
-                ch.start();
-                connections.add(ch);
-//                txtArea_serverLog.append("Client "+"name"+"is online.\n");
-//                ch.sendToAll("Client "+"name"+"is online.");
-            }
-        
+        Thread client_listener = new Thread(new NewClientListener(this));
+        client_listener.start();
     }//GEN-LAST:event_btn_startActionPerformed
 
     private void btn_stopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_stopActionPerformed
-        for(int i = 0; i < connections.size(); i++){
-               ClientHandler ch = connections.get(i);
-               ch.closeConnection();
+        System.out.println("You pressed STOP button.");
+        for (int i = 0; i < connections.size(); i++) {
+            ClientHandler ch = connections.get(i);
+            ch.sendTo("<System>: server has shut down.");
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            ch.closeConnection();
         }
         try {
-            serverSocket.close();
+            if (serverSocket != null) {
+                serverSocket.close();
+            }
         } catch (IOException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("Error: problem closing the main server socket in 'btnStopAction()'");
         }
+        txtArea_serverLog.append("Server: shut down.");
     }//GEN-LAST:event_btn_stopActionPerformed
 
     /**
