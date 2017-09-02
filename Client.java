@@ -43,7 +43,7 @@ public class Client extends javax.swing.JFrame {
 
         @Override
         public void run() {
-            String regEx_shut_down = ".*shut down.*";
+            String regEx_shut_down = ".*shut down.*", regEx_name_exists = ".*already exists.*";
             String data = null;
             try 
             {
@@ -51,9 +51,16 @@ public class Client extends javax.swing.JFrame {
                 while ((data = reader.readLine()) != null) 
                 {
                     txtareaLog.append(data+"\n");
+                    System.out.println("socket listener: I recieved - "+data);
+                    //Case 1: Server telling client to disconnect. 
                     if(data.matches(regEx_shut_down)){
                         Thread.sleep(1500);
                         disconnect();
+                    }
+                    //Case 2: Server telling client his name is already in use.
+                    else if(data.matches(regEx_name_exists)){
+                        txtareaLog.append("<System>: Please connect again with another name.\n");
+                        disconnectQuietly();
                     }
                     Thread.sleep(1);
                 }
@@ -63,10 +70,11 @@ public class Client extends javax.swing.JFrame {
         
     }
     
-    private void disconnect() {
+    //Disconnecting without alerting other client.
+    private void disconnectQuietly() {
+        disableButtons();
         isConneceted = false;
-        writer.println(this.name + ", has disconnected.");
-        txtareaLog.setText("");
+        txtName.setText("");
         txtareaMsg.setText("");
         txtClientName.setText("");
         txtAddress.setText("");
@@ -75,7 +83,25 @@ public class Client extends javax.swing.JFrame {
             reader.close();
             writer.close();
         } catch (Exception e) {
-            txtareaLog.append("Error: problem Disconneting.");
+            txtareaLog.append("<Ststem>: Server in currently offline.\n<Ststem>: Please try again later.\n");
+            System.out.println("Error: problem Disconneting.");
+        }
+    }
+    
+    private void disconnect() {
+        disableButtons();
+        isConneceted = false;
+        if(writer != null) writer.println(this.name + ", has disconnected.");
+        txtareaLog.setText("");
+        txtareaMsg.setText("");
+        txtClientName.setText("");
+        txtAddress.setText("");   
+        try {
+            socket.close();
+            reader.close();
+            writer.close();
+        } catch (Exception e) {
+            txtareaLog.append("<Ststem>: Server in currently offline.\n<Ststem>: Please try again later.\n");
             System.out.println("Error: problem Disconneting.");
         }
     }
@@ -93,6 +119,32 @@ public class Client extends javax.swing.JFrame {
         selectWhoSendTo.setLocationRelativeTo(this);
         selectWhoSendTo.setVisible(true);
     }
+    
+    private void frame_noMsgTyped(){
+        noMsgTyped.setAlwaysOnTop(true);
+        noMsgTyped.setSize(410, 180);
+        noMsgTyped.setLocationRelativeTo(this);
+        noMsgTyped.setVisible(true);
+    }
+    
+    private void enableButtons(){
+        btnClearLog.setEnabled(true);
+        btnClearMsg.setEnabled(true);
+        btnDissconnect.setEnabled(true);
+        btnSend.setEnabled(true);
+        btnShowOnline.setEnabled(true);
+    }
+    
+    private void disableButtons(){
+        btnClearLog.setEnabled(false);
+        btnClearMsg.setEnabled(false);
+        btnDissconnect.setEnabled(false);
+        btnSend.setEnabled(false);
+        btnShowOnline.setEnabled(false);
+    }
+    
+   
+    
 
        
     /**
@@ -111,6 +163,9 @@ public class Client extends javax.swing.JFrame {
         selectWhoSendTo = new javax.swing.JFrame();
         btn_frame2_ok = new javax.swing.JButton();
         jLabel4 = new javax.swing.JLabel();
+        noMsgTyped = new javax.swing.JFrame();
+        jLabel6 = new javax.swing.JLabel();
+        jButton1 = new javax.swing.JButton();
         jPanel1 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         txtName = new javax.swing.JTextField();
@@ -125,11 +180,11 @@ public class Client extends javax.swing.JFrame {
         jPanel3 = new javax.swing.JPanel();
         btnSend = new javax.swing.JButton();
         btnClearMsg = new javax.swing.JButton();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        txtareaMsg = new javax.swing.JTextArea();
         radiobtnAllClients = new javax.swing.JRadioButton();
         radiobtnClient = new javax.swing.JRadioButton();
         txtClientName = new javax.swing.JTextField();
+        txtareaMsg = new javax.swing.JTextField();
+        jLabel5 = new javax.swing.JLabel();
         btnShowOnline = new javax.swing.JButton();
 
         recipientNotChosen.setAlwaysOnTop(true);
@@ -199,7 +254,45 @@ public class Client extends javax.swing.JFrame {
                 .addGap(29, 29, 29))
         );
 
+        jLabel6.setText("Please write a message to send.");
+
+        jButton1.setText("OK");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout noMsgTypedLayout = new javax.swing.GroupLayout(noMsgTyped.getContentPane());
+        noMsgTyped.getContentPane().setLayout(noMsgTypedLayout);
+        noMsgTypedLayout.setHorizontalGroup(
+            noMsgTypedLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(noMsgTypedLayout.createSequentialGroup()
+                .addGroup(noMsgTypedLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(noMsgTypedLayout.createSequentialGroup()
+                        .addGap(95, 95, 95)
+                        .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 196, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(noMsgTypedLayout.createSequentialGroup()
+                        .addGap(143, 143, 143)
+                        .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(96, Short.MAX_VALUE))
+        );
+        noMsgTypedLayout.setVerticalGroup(
+            noMsgTypedLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(noMsgTypedLayout.createSequentialGroup()
+                .addContainerGap(35, Short.MAX_VALUE)
+                .addComponent(jLabel6)
+                .addGap(18, 18, 18)
+                .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(19, 19, 19))
+        );
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
+            }
+        });
 
         jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder("Connect:"));
         jPanel1.setName(""); // NOI18N
@@ -242,7 +335,7 @@ public class Client extends javax.swing.JFrame {
                 .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 54, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(txtAddress, javax.swing.GroupLayout.PREFERRED_SIZE, 108, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 57, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 56, Short.MAX_VALUE)
                 .addComponent(btnConnect, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(52, 52, 52))
         );
@@ -295,7 +388,7 @@ public class Client extends javax.swing.JFrame {
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
-                .addComponent(jScrollPane3)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 150, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnClearLog))
         );
@@ -316,10 +409,6 @@ public class Client extends javax.swing.JFrame {
             }
         });
 
-        txtareaMsg.setColumns(20);
-        txtareaMsg.setRows(5);
-        jScrollPane1.setViewportView(txtareaMsg);
-
         sendingChoiseGroup.add(radiobtnAllClients);
         radiobtnAllClients.setText("All clients");
         radiobtnAllClients.addActionListener(new java.awt.event.ActionListener() {
@@ -336,21 +425,14 @@ public class Client extends javax.swing.JFrame {
             }
         });
 
+        jLabel5.setText("Message: ");
+
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel3Layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addComponent(jScrollPane1)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel3Layout.createSequentialGroup()
-                                .addGap(16, 16, 16)
-                                .addComponent(btnSend))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(btnClearMsg))))
                     .addGroup(jPanel3Layout.createSequentialGroup()
                         .addContainerGap()
                         .addComponent(radiobtnAllClients)
@@ -358,25 +440,33 @@ public class Client extends javax.swing.JFrame {
                         .addComponent(radiobtnClient)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(txtClientName, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE)))
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addComponent(jLabel5)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(txtareaMsg)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnSend, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btnClearMsg, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
-                .addGap(42, 42, 42)
-                .addComponent(btnSend)
-                .addGap(18, 18, 18)
-                .addComponent(btnClearMsg)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-            .addGroup(jPanel3Layout.createSequentialGroup()
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(radiobtnAllClients)
                     .addComponent(radiobtnClient)
                     .addComponent(txtClientName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 96, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED, 13, Short.MAX_VALUE)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel5)
+                    .addComponent(txtareaMsg, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnSend, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnClearMsg, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
         btnShowOnline.setText("Show Online");
@@ -390,19 +480,16 @@ public class Client extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+            .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jPanel3, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addComponent(btnShowOnline)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(btnDissconnect))
-                    .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                        .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE)))
-                .addContainerGap())
+                    .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -410,9 +497,9 @@ public class Client extends javax.swing.JFrame {
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 13, Short.MAX_VALUE)
+                .addGap(18, 18, 18)
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnDissconnect)
                     .addComponent(btnShowOnline))
@@ -445,6 +532,7 @@ public class Client extends javax.swing.JFrame {
     private void btnConnectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConnectActionPerformed
         String _connect  = "Connect", del = " ", end_line = "\n";
         if (!isConneceted) {
+            enableButtons();
             // Getting Client's name & address from txt field:
             this.name = txtName.getText();
             if(!txtAddress.getText().equals("")) this.ip = txtAddress.getText();
@@ -472,8 +560,8 @@ public class Client extends javax.swing.JFrame {
                 this.txtareaLog.append("Don't know about this host\n");
                 disconnect();
             } catch (IOException e) {
-                this.txtareaLog.append("Couldn't get I/O for "
-                        + "the connection to this host\n" + e.getMessage());
+                this.txtareaLog.append("<System>: the server is currently offline.\n");
+                this.txtareaLog.append("<System>: Please try again later.");
                 disconnect();
             }
             System.out.println("Client: created socket listening thread.");
@@ -488,17 +576,21 @@ public class Client extends javax.swing.JFrame {
     private void btnSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSendActionPerformed
         String send_to = "send to ", everyone = "everyone",  del = " ", dots = ": ";
         String msg = txtareaMsg.getText();
-        
+        //Case 0: Blank message.
+        if(msg.equals("")){
+            frame_noMsgTyped();
+            return;
+        }
         //Case 1: 'msg' is to be sent to all clients:
-        if(radiobtnAllClients.isSelected()){
+        else if(radiobtnAllClients.isSelected()){
             writer.println(send_to + everyone + dots +msg); 
             txtareaMsg.setText("");
         }
         //Case 2: 'msg' is to be sent to the chosen client:
         else if(radiobtnClient.isSelected()){
-            String resipient = txtClientName.getText();
+            String resipient = "<"+txtClientName.getText()+">";
             //Case 2.1: No resipient was entered.
-            if(resipient.equals("")){
+            if(resipient.equals("<>")){
                 frame_recipientNotChosen();
             }
             //Case 2.2: send msg with resipient name.
@@ -507,7 +599,7 @@ public class Client extends javax.swing.JFrame {
             txtareaMsg.setText("");
             }
         }
-        //Case 3:No radio buttons were selected.
+        //Case 3: No radio buttons were selected.
         else{
             frame_selectWhoSendTo();
         }
@@ -530,7 +622,6 @@ public class Client extends javax.swing.JFrame {
 
     private void radiobtnClientActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_radiobtnClientActionPerformed
         txtareaMsg.setEnabled(true);
-        System.out.println("Client: yuou cohbdbstr");
         txtClientName.setEditable(true);
     }//GEN-LAST:event_radiobtnClientActionPerformed
 
@@ -541,6 +632,14 @@ public class Client extends javax.swing.JFrame {
     private void btn_frame2_okActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_frame2_okActionPerformed
         selectWhoSendTo.setVisible(false);
     }//GEN-LAST:event_btn_frame2_okActionPerformed
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        noMsgTyped.setVisible(false);
+    }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+        disconnect();
+    }//GEN-LAST:event_formWindowClosing
 
     /**
      * @param args the command line arguments
@@ -575,15 +674,21 @@ public class Client extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                //new Client().setVisible(true);
                 Client client = new Client();
                 client.setVisible(true);
                 client.setTitle("Client");
+                client.btnClearLog.setEnabled(false);
+                client.btnClearMsg.setEnabled(false);
+                client.btnDissconnect.setEnabled(false);
+                client.btnSend.setEnabled(false);
+                client.btnShowOnline.setEnabled(false);
+                client.setResizable(false);
                 //To make the sending choise of sending to all clients or a specific one.
                 //This makes it only posible to select one of those choises.
                 ButtonGroup sending_group = new ButtonGroup();
                 sending_group.add(client.radiobtnClient);
                 sending_group.add(client.radiobtnAllClients);
+                
             }
         });
     }
@@ -597,15 +702,18 @@ public class Client extends javax.swing.JFrame {
     private javax.swing.JButton btnShowOnline;
     private javax.swing.JButton btn_frame2_ok;
     private javax.swing.JButton btn_frame_ok;
+    private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
-    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JFrame noMsgTyped;
     private javax.swing.JRadioButton radiobtnAllClients;
     private javax.swing.JRadioButton radiobtnClient;
     private javax.swing.JFrame recipientNotChosen;
@@ -615,7 +723,7 @@ public class Client extends javax.swing.JFrame {
     private javax.swing.JTextField txtClientName;
     private javax.swing.JTextField txtName;
     private javax.swing.JTextArea txtareaLog;
-    private javax.swing.JTextArea txtareaMsg;
+    private javax.swing.JTextField txtareaMsg;
     // End of variables declaration//GEN-END:variables
 
     
