@@ -263,6 +263,8 @@ public class Server extends javax.swing.JFrame {
                         boolean valid_name = sendTo(recipient, clientName + dots + split_msg_header);
                         if (valid_name) {
                             txtArea_serverLog.append(_forward_msg_from + clientName + _to + recipient + endline);
+                            sendTo(clientName, clientName + dots + split_msg_header);
+                            
                         } else {
                             txtArea_serverLog.append(_client + clientName + recipient_invalid);
                         }
@@ -453,6 +455,7 @@ public class Server extends javax.swing.JFrame {
     }//GEN-LAST:event_formWindowClosing
 
     /**
+     * Runs server that manages the chat.
      * @param args the command line arguments
      */
     public static void main(String args[]) {
