@@ -8,9 +8,8 @@ import java.net.UnknownHostException;
 import javax.swing.ButtonGroup;
 
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Client class creats client who can connect to the chat and communicate 
+ * with other online clients.
  */
 /**
  *
@@ -18,135 +17,167 @@ import javax.swing.ButtonGroup;
  */
 public class Client extends javax.swing.JFrame {
 
+    //instance variables:
     private Socket socket = null;       //Socket object for communicating
     private PrintWriter writer = null;    //socket output to server - for sending data through the socket to the server
     private BufferedReader reader = null;  //socket input from server - for reading server's response
-    private String name;  //default - local host.
-    private String ip = "127.0.0.1"; // Needs to be a built in java IP object..
+    private String name;
+    private String ip;
     private int port = 45000;
     private boolean isConneceted = false;
 
+    //Locks for synchronization:
+    private Object lock_writer = new Object();
+    private Object lock_disconnect = new Object();
+
+    //constants:
+    private static final boolean quietlly = true, alertAll = false;
+    private static final String empty = "", _connect = "Connect", del = " ", end_line = "\n", has_disconnected = ", has disconnected.";
+    private static final String send_to = "send to ", everyone = "everyone", dots = ": ", get_all_names = "get online client names";
+
     /**
-     * Creates new form Client
+     * Client - default constructor.
      */
     public Client() {
         initComponents();
     }
-    
+
+    /**
+     * Instantiate a thread that listens to the socket, and starts it.
+     */
     private void listenThread() {
         Thread socket_listener = new Thread(new SocketListener());
         socket_listener.start();
     }
-    
-    
-    class SocketListener implements Runnable{
+
+    /**
+     * instantiate threads that listen to the socket that connects to the server
+     * and acts accordingly upon response.
+     */
+    class SocketListener implements Runnable {
 
         @Override
         public void run() {
             String regEx_shut_down = ".*shut down.*", regEx_name_exists = ".*already exists.*";
             String data = null;
-            try 
-            {
+            try {
                 System.out.println("Client: socket thread is waiting.");
-                while ((data = reader.readLine()) != null) 
-                {
-                    txtareaLog.append(data+"\n");
-                    System.out.println("socket listener: I recieved - "+data);
+                while ((data = reader.readLine()) != null) {
+                    //print recieved data to log.
+                    txtareaLog.append(data + "\n");
+                    System.out.println("socket listener: I recieved - " + data);
                     //Case 1: Server telling client to disconnect. 
-                    if(data.matches(regEx_shut_down)){
-                        Thread.sleep(1500);
-                        disconnect();
-                    }
-                    //Case 2: Server telling client his name is already in use.
-                    else if(data.matches(regEx_name_exists)){
+                    if (data.matches(regEx_shut_down)) {
+                        Thread.sleep(2500);
+                        disconnect(alertAll);
+                    } //Case 2: Server telling client his name is already occupied.
+                    else if (data.matches(regEx_name_exists)) {
                         txtareaLog.append("<System>: Please connect again with another name.\n");
-                        disconnectQuietly();
+                        Thread.sleep(2500);
+                        disconnect(quietlly);
                     }
                     Thread.sleep(1);
                 }
-           }catch(Exception ex) { }
-        
+            } catch (Exception ex) {
+            }
+
         }
-        
+
     }
-    
-    //Disconnecting without alerting other client.
-    private void disconnectQuietly() {
-        disableButtons();
-        isConneceted = false;
-        txtName.setText("");
-        txtareaMsg.setText("");
-        txtClientName.setText("");
-        txtAddress.setText("");
-        try {
-            socket.close();
-            reader.close();
-            writer.close();
-        } catch (Exception e) {
-            txtareaLog.append("<Ststem>: Server in currently offline.\n<Ststem>: Please try again later.\n");
-            System.out.println("Error: problem Disconneting.");
-        }
-    }
-    
-    private void disconnect() {
-        disableButtons();
-        isConneceted = false;
-        if(writer != null) writer.println(this.name + ", has disconnected.");
-        txtareaLog.setText("");
-        txtareaMsg.setText("");
-        txtClientName.setText("");
-        txtAddress.setText("");   
-        try {
-            socket.close();
-            reader.close();
-            writer.close();
-        } catch (Exception e) {
-            txtareaLog.append("<Ststem>: Server in currently offline.\n<Ststem>: Please try again later.\n");
-            System.out.println("Error: problem Disconneting.");
+
+    /**
+     * Disconnects the client from the chat.
+     *
+     * @param method whether to alert other online client about disconnecting or
+     * not.
+     */
+    private void disconnect(boolean method) {
+        synchronized (lock_disconnect) {    //called by gui thread & socket thread. 
+            disableButtons();
+            isConneceted = false;
+            //if neaded, alerts online cliens about disconnection.
+            if (method == alertAll && writer != null) {
+                send(name + has_disconnected);
+            }
+            txtareaLog.setText(empty);
+            txtareaMsg.setText(empty);
+            txtClientName.setText(empty);
+            txtAddress.setEditable(true);
+            //closing socket.
+            try {
+                socket.close();
+                reader.close();
+                writer.close();
+            } catch (Exception e) {
+                txtareaLog.append("<System>: Server in currently offline.\n<System>: Please try again later.\n");
+                System.out.println("Error: problem Disconneting.");
+            }
         }
     }
-    
-    private void frame_recipientNotChosen(){
+
+    /**
+     * sends received data through the socket. the sending is synchronized.
+     *
+     * @param data.
+     */
+    private void send(String data) {
+        synchronized (lock_writer) {
+            writer.println(data);
+        }
+    }
+
+    /**
+     * Activates a frame that tells the user: a recipient name, was not entered.
+     */
+    private void frame_recipientNotChosen() {
         recipientNotChosen.setAlwaysOnTop(true);
         recipientNotChosen.setSize(410, 180);
         recipientNotChosen.setLocationRelativeTo(this);
         recipientNotChosen.setVisible(true);
     }
-    
-    private void frame_selectWhoSendTo(){
+
+    /**
+     * Activates a frame that tells the user: the sending method was not chosen.
+     */
+    private void frame_selectWhoSendTo() {
         selectWhoSendTo.setAlwaysOnTop(true);
         selectWhoSendTo.setSize(410, 180);
         selectWhoSendTo.setLocationRelativeTo(this);
         selectWhoSendTo.setVisible(true);
     }
-    
-    private void frame_noMsgTyped(){
+
+    /**
+     * Activates a frame that tells the user: No message has been typed.
+     */
+    private void frame_noMsgTyped() {
         noMsgTyped.setAlwaysOnTop(true);
         noMsgTyped.setSize(410, 180);
         noMsgTyped.setLocationRelativeTo(this);
         noMsgTyped.setVisible(true);
     }
-    
-    private void enableButtons(){
+
+    /**
+     * Enables buttons.
+     */
+    private void enableButtons() {
         btnClearLog.setEnabled(true);
         btnClearMsg.setEnabled(true);
         btnDissconnect.setEnabled(true);
         btnSend.setEnabled(true);
         btnShowOnline.setEnabled(true);
     }
-    
-    private void disableButtons(){
+
+    /**
+     * Disable buttons.
+     */
+    private void disableButtons() {
         btnClearLog.setEnabled(false);
         btnClearMsg.setEnabled(false);
         btnDissconnect.setEnabled(false);
         btnSend.setEnabled(false);
         btnShowOnline.setEnabled(false);
     }
-    
-   
-    
 
-       
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -332,8 +363,8 @@ public class Client extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(txtName, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
-                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 54, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(txtAddress, javax.swing.GroupLayout.PREFERRED_SIZE, 108, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 56, Short.MAX_VALUE)
                 .addComponent(btnConnect, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -516,107 +547,135 @@ public class Client extends javax.swing.JFrame {
     private void txtAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtAddressActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_txtAddressActionPerformed
-
+    /**
+     * Clears the log text.
+     *
+     * @param evt clear button.
+     */
     private void btnClearLogActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClearLogActionPerformed
-        txtareaLog.setText("");
+        txtareaLog.setText(empty);
     }//GEN-LAST:event_btnClearLogActionPerformed
-
+    /**
+     * Clears the message text.
+     *
+     * @param evt clear button.
+     */
     private void btnClearMsgActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClearMsgActionPerformed
-        txtareaMsg.setText("");
+        txtareaMsg.setText(empty);
     }//GEN-LAST:event_btnClearMsgActionPerformed
-
+    /**
+     * action listener that call client to disconnect.
+     *
+     * @param evt disconnect button.
+     */
     private void btnDissconnectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDissconnectActionPerformed
-       disconnect();
+        disconnect(alertAll);
     }//GEN-LAST:event_btnDissconnectActionPerformed
-
+    /**
+     * Establishes clients socket to the server and calls a thread thats job
+     * will be to listen to the socket.
+     *
+     * @param evt connect button.
+     */
     private void btnConnectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConnectActionPerformed
-        String _connect  = "Connect", del = " ", end_line = "\n";
         if (!isConneceted) {
             enableButtons();
-            // Getting Client's name & address from txt field:
-            this.name = txtName.getText();
-            if(!txtAddress.getText().equals("")) this.ip = txtAddress.getText();
-            System.out.println("Client: connetcting to\tname: "+name+"\tip:"+ip);
-            //not entering this 'if' when supposed too.
-//            if (name.equals("") || ip.equals("")){
-//                return;
-//            }
+            //Getting Client's name & address from txt field:
+            name = txtName.getText();
+            ip = txtAddress.getText();
+            if (ip.equals(empty)) {
+                ip = "localhost";
+            }
+            if (name.equals(empty)) {
+                txtareaLog.append("<System>: Please enter a user name.\n");
+                return;
+            }
+            System.out.println("Client: connecting to\tname: " + name + "\tip:" + ip);
             txtClientName.setEditable(false);
             txtAddress.setEditable(false);
 
-            //Astablishing socket with the server:
+            //Establishing socket with the server:
             try {
                 System.out.println("Client: astablishing socket with the server..");
+                System.out.println("Client: opening socket.");
                 socket = new Socket(this.ip, this.port);   //establish the socket connection between the client and the server
+                System.out.println("Client: opening writer.");
                 writer = new PrintWriter(socket.getOutputStream(), true);  //open a PrintWriter on the socket
+                System.out.println("Client: opening reader.");
                 reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));  //open a BufferedReader on the socket
                 isConneceted = true;
-                
                 System.out.println("Client: sending my name to sever..");
                 //Sending this client's name to server.
-                writer.println(_connect + del + name);
+                send(_connect + del + name);
                 //closing 'writer', 'reader' and 'scoket' is done in disconnect(). 
             } catch (UnknownHostException e) {
                 this.txtareaLog.append("Don't know about this host\n");
-                disconnect();
+                disconnect(alertAll);
+                return;
             } catch (IOException e) {
                 this.txtareaLog.append("<System>: the server is currently offline.\n");
                 this.txtareaLog.append("<System>: Please try again later.");
-                disconnect();
+                e.printStackTrace();
+                disconnect(alertAll);
+                return;
             }
             System.out.println("Client: created socket listening thread.");
-            //Creating new thread that will listen to the sockett.
+            //Creating new thread that will listen to the socket.
             listenThread();
-        }
-        else{
+        } // Client is already connected.
+        else {
             this.txtareaLog.append(this.name + ", You are already conneceted!\n");
         }
     }//GEN-LAST:event_btnConnectActionPerformed
 
+    /**
+     * Sends client's typed message to either a specific client or to all online
+     * clients.
+     *
+     * @param evt send button.
+     */
     private void btnSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSendActionPerformed
-        String send_to = "send to ", everyone = "everyone",  del = " ", dots = ": ";
+        //Gettting the typed message.
         String msg = txtareaMsg.getText();
-        //Case 0: Blank message.
-        if(msg.equals("")){
+        //Case 0: message empty.
+        if (msg.equals(empty)) {
             frame_noMsgTyped();
             return;
-        }
-        //Case 1: 'msg' is to be sent to all clients:
-        else if(radiobtnAllClients.isSelected()){
-            writer.println(send_to + everyone + dots +msg); 
-            txtareaMsg.setText("");
-        }
-        //Case 2: 'msg' is to be sent to the chosen client:
-        else if(radiobtnClient.isSelected()){
-            String resipient = "<"+txtClientName.getText()+">";
+        } //Case 1: 'msg' is to be sent to all clients:
+        else if (radiobtnAllClients.isSelected()) {
+            // sending: 'send to everyone: msg'.
+            send(send_to + everyone + dots + msg);
+            txtareaMsg.setText(empty);
+        } //Case 2: 'msg' is to be sent to the chosen client:
+        else if (radiobtnClient.isSelected()) {
+            String resipient = "<" + txtClientName.getText() + ">";
             //Case 2.1: No resipient was entered.
-            if(resipient.equals("<>")){
+            if (resipient.equals("<>")) {
                 frame_recipientNotChosen();
+            } //Case 2.2: send msg with resipient.
+            else {
+                //sending: 'send to [recipient name] : msg'.
+                send(send_to + resipient + del + dots + msg);
+                txtareaMsg.setText(empty);
             }
-            //Case 2.2: send msg with resipient name.
-            else{ 
-            writer.println(send_to + resipient+del+dots+ msg);    // if wrong resipient name has been put in, server needs to tell this (sending) client.
-            txtareaMsg.setText("");
-            }
-        }
-        //Case 3: No radio buttons were selected.
-        else{
+        } //Case 3: No radio button(sending method) was selected.
+        else {
             frame_selectWhoSendTo();
         }
-        
-        // Determin who to send it too.
-        
     }//GEN-LAST:event_btnSendActionPerformed
-
+    /**
+     * asks server - who are the online clients.
+     *
+     * @param evt show online button.
+     */
     private void btnShowOnlineActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnShowOnlineActionPerformed
         System.out.println("Client: I want a list of online clients please.");
-        String get_all_names = "get online client names";
-        writer.println(get_all_names);
+        send(get_all_names);
     }//GEN-LAST:event_btnShowOnlineActionPerformed
 
     private void radiobtnAllClientsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_radiobtnAllClientsActionPerformed
         txtareaMsg.setEnabled(true);
-        txtClientName.setText("");
+        txtClientName.setText(empty);
         txtClientName.setEditable(false);
     }//GEN-LAST:event_radiobtnAllClientsActionPerformed
 
@@ -638,7 +697,7 @@ public class Client extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
-        disconnect();
+        disconnect(alertAll);
     }//GEN-LAST:event_formWindowClosing
 
     /**
@@ -688,7 +747,7 @@ public class Client extends javax.swing.JFrame {
                 ButtonGroup sending_group = new ButtonGroup();
                 sending_group.add(client.radiobtnClient);
                 sending_group.add(client.radiobtnAllClients);
-                
+
             }
         });
     }
@@ -726,7 +785,4 @@ public class Client extends javax.swing.JFrame {
     private javax.swing.JTextField txtareaMsg;
     // End of variables declaration//GEN-END:variables
 
-    
-
-    
 }
