@@ -6,6 +6,6 @@ It is a multithreaded client/server Chat which uses Java Socket programming. A s
 ![alt text](https://github.com/AkivaGubbay/Chat/blob/master/pictures/Server%20-%20pic.PNG)
     
     Client:
-![alt text](https://github.com/AkivaGubbay/Chat/blob/master/pictures/Client%20-%20pic.PNG)
+![alt text](https://github.com/AkivaGubbay/Chat/blob/master/pictures/client%20-%20pic.PNG)
     
 
