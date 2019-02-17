@@ -20,23 +20,14 @@ import java.util.logging.Logger;
  */
 public class Server extends javax.swing.JFrame {
     // Instance variables:
-    private int serverPort = 45000; // The port this server is listening on.
+    private final int serverPort = 45000; // The port this server is listening on.
     private ServerSocket serverSocket = null;  // Server socket that will listen for incoming connections.
     boolean has_stopped = false;
     Vector<ClientHandler> connections = new Vector<ClientHandler>();
     
-    //constants:
-    private static final boolean quietlly = true, alertAll = false;
-    private static final String empty = "", _connected = " connected.\n", _client = "Client ", del = " ", _forward_msg_from = "Forwarding message from client ";
-    private static final String _is_online = "is online.", recipient_invalid = " attempted messaging offline client.\n", endline = "\n", _to = " to ";
-    private static final String _all = "all clients.\n", dots = ": ", get_all_names = "get online client names", _disconnected = "has disconnected.";
-    private static final String _client_name = "<System>: Client name ", _already_exists = " already exists.\n", failed_connect = "Client failed to connect. Client name occupied.\n";
-    private static final String regEx_send_to_all = "send to everyone.*", regEx_send_to_client = "send to .*";
-    private static final String regEx_queitly_disconnected = ".*quietley.*", regEx_disconnected = ".*disconnected.*";
-    private static final String regEx_connect_client = "^Connect .*";
-    
     //Locks for synchronization:
-    private Object lock_has_stopped = new Object();
+    private  final Object lock_has_stopped = new Object();
+    private final Object lock_writer = new Object();
 
     /**
      * Creates new form Server
@@ -70,7 +61,7 @@ public class Server extends javax.swing.JFrame {
      * @return client message without header details.
      */
     private static String splitMsgFromHeader(String input) {
-        int msg_begins = input.indexOf(dots) + dots.length();
+        int msg_begins = input.indexOf(ChatConstant.dots) + ChatConstant.dots.length();
         int msg_ends = input.length();
         return input.substring(msg_begins, msg_ends);
     }
@@ -106,7 +97,7 @@ public class Server extends javax.swing.JFrame {
         for (int i = 0; i < connections.size(); i++) {
             ClientHandler ch = connections.get(i);
             if(i == 0) ch.sendToAll("<System>: server has shut down.\n");
-            ch.closeConnection(quietlly);
+            ch.closeConnection(ChatConstant.quietlly);
         }
         //Closing server socket:
         try {
@@ -136,10 +127,7 @@ public class Server extends javax.swing.JFrame {
         private Server server;
         private PrintWriter writer;
         private BufferedReader reader;
-        String clientName = empty;
-        
-        //Locks for synchronization:
-        private Object lock_writer = new Object();
+        String clientName = ChatConstant.empty;
         
         /**
          * Constructor receiving socket & server.
@@ -157,7 +145,7 @@ public class Server extends javax.swing.JFrame {
          */
         public void closeConnection(boolean method) {
             //if needed, alert all online clients about disconnecting.
-            if(method == alertAll) sendToAll("Client " + this.clientName + " disconnected.");
+            if(method == ChatConstant.alertAll) sendToAll("Client " + this.clientName + " disconnected.");
             server.connections.remove(this);
             //last cliet disconnecting:
             if(server.connections.size() == 0 && !hasStopped()){
@@ -227,55 +215,55 @@ public class Server extends javax.swing.JFrame {
                     msg = reader.readLine();
                     System.out.println("ClientHandler: recieved- |" + msg + "|");
                     //Case 1: Client is establishing connection.
-                    if (msg.matches(regEx_connect_client)) {
+                    if (msg.matches(ChatConstant.regEx_connect_client)) {
                         //received: 'Connect [client name]'.
-                        String sent_name = "<" + msg.split(del)[1] + ">";    // This is how server obtains the client's name.
+                        String sent_name = "<" + msg.split(ChatConstant.del)[1] + ">";    // This is how server obtains the client's name.
                         System.out.println("ClientHandler: Got client name: " + clientName);
                         //checking no online clients occuping that name:
                         if (server.isNameValid(sent_name)) {
                             System.out.println("ClientHandler: Name is valid.");
                             clientName = sent_name;
-                            txtArea_serverLog.append(_client + clientName + _connected);
-                            String msg_with_header = clientName + del + _is_online;
+                            txtArea_serverLog.append(ChatConstant._client + clientName + ChatConstant._connected);
+                            String msg_with_header = clientName + ChatConstant.del + ChatConstant._is_online;
                             sendToAll(msg_with_header);
                         } else {
                             System.out.println("ClientHandler: Name is NOT valid.");
-                            txtArea_serverLog.append(failed_connect);
+                            txtArea_serverLog.append(ChatConstant.failed_connect);
                             //Telling client that his name is occupied and he must disconnect.
-                            send(_client_name + clientName + _already_exists);
+                            send(ChatConstant._client_name + clientName + ChatConstant._already_exists);
                             Thread.sleep(3000); //give time for message to be sent.
-                            closeConnection(quietlly);
+                            closeConnection(ChatConstant.quietlly);
                             System.out.println("Client handler: killing my self.");
                             terminate_connection = true;
                         }
                     } //Case 2: Client sent msg to ALL clients.
-                    else if (msg.matches(regEx_send_to_all)) {
+                    else if (msg.matches(ChatConstant.regEx_send_to_all)) {
                         //Forwarding message to all online clients.
                         //received: 'send to everyone: msg'.
-                        txtArea_serverLog.append(_forward_msg_from + clientName + _to + _all);
+                        txtArea_serverLog.append(ChatConstant._forward_msg_from + clientName + ChatConstant._to + ChatConstant._all);
                         //Sending msg without header:
                         String split_msg_header = splitMsgFromHeader(msg);
-                        sendToAll(this.clientName + dots + split_msg_header);
+                        sendToAll(this.clientName + ChatConstant.dots + split_msg_header);
                     } //Case 3: Client sent msg to a specific client.
-                    else if (msg.matches(regEx_send_to_client)) {
-                        String recipient = msg.split(del)[2];
+                    else if (msg.matches(ChatConstant.regEx_send_to_client)) {
+                        String recipient = msg.split(ChatConstant.del)[2];
                         String split_msg_header = splitMsgFromHeader(msg);
-                        boolean valid_name = sendTo(recipient, clientName + dots + split_msg_header);
+                        boolean valid_name = sendTo(recipient, clientName + ChatConstant.dots + split_msg_header);
                         if (valid_name) {
-                            txtArea_serverLog.append(_forward_msg_from + clientName + _to + recipient + endline);
-                            sendTo(clientName, clientName + dots + split_msg_header);
+                            txtArea_serverLog.append(ChatConstant._forward_msg_from + clientName + ChatConstant._to + recipient + ChatConstant.endline);
+                            sendTo(clientName, clientName + ChatConstant.dots + split_msg_header);
                             
                         } else {
-                            txtArea_serverLog.append(_client + clientName + recipient_invalid);
+                            txtArea_serverLog.append(ChatConstant._client + clientName + ChatConstant.recipient_invalid);
                         }
                     } //Case 4: send back all online client names.
-                    else if (msg.equals(get_all_names)) {
+                    else if (msg.equals(ChatConstant.get_all_names)) {
                         System.out.println("ClientHandler: I need to send all client names.");
                         if (server.connections.size() == 0) {
                             send("<System>: No online clients.");
                             return;
                         }
-                        String client_names = empty;
+                        String client_names = ChatConstant.empty;
                         int n = server.connections.size();
                         System.out.println("ClientHandler: number of online clients: " + n);
                         for (int i = 0; i < n - 1; i++) {
@@ -285,9 +273,9 @@ public class Server extends javax.swing.JFrame {
                         System.out.println("ClientHandler: list of client names: " + client_names);
                         send("<System>: Connected clients - " + client_names);
                         //Case 5: client has disconnected.
-                    } else if (msg.matches(regEx_disconnected)) {
-                            txtArea_serverLog.append(_client + clientName + del + _disconnected + endline);
-                            closeConnection(alertAll);
+                    } else if (msg.matches(ChatConstant.regEx_disconnected)) {
+                            txtArea_serverLog.append(ChatConstant._client + clientName + ChatConstant.del + ChatConstant._disconnected + ChatConstant.endline);
+                            closeConnection(ChatConstant.alertAll);
                            terminate_connection = true;
                     }
                     Thread.sleep(1);
@@ -319,8 +307,8 @@ public class Server extends javax.swing.JFrame {
 
         @Override
         public void run() {
-            while (!hasStopped()) { //need to sync 'hasStopped';
-                Socket clientSocket = null;  // socket created by accept
+            while (!hasStopped()) { 
+                Socket clientSocket = null;  // socket will be created by accept()
                 try {
                     System.out.println("NewClientListener: waiting for clients to connect..");
                     clientSocket = this.server.serverSocket.accept(); // wait for a client to connect

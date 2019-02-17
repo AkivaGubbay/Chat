@@ -30,11 +30,6 @@ public class Client extends javax.swing.JFrame {
     private Object lock_writer = new Object();
     private Object lock_disconnect = new Object();
 
-    //constants:
-    private static final boolean quietlly = true, alertAll = false;
-    private static final String empty = "", _connect = "Connect", del = " ", end_line = "\n", has_disconnected = ", has disconnected.";
-    private static final String send_to = "send to ", everyone = "everyone", dots = ": ", get_all_names = "get online client names";
-
     /**
      * Client - default constructor.
      */
@@ -69,12 +64,12 @@ public class Client extends javax.swing.JFrame {
                     //Case 1: Server telling client to disconnect. 
                     if (data.matches(regEx_shut_down)) {
                         Thread.sleep(2500);
-                        disconnect(alertAll);
+                        disconnect(ChatConstant.alertAll);
                     } //Case 2: Server telling client his name is already occupied.
                     else if (data.matches(regEx_name_exists)) {
                         txtareaLog.append("<System>: Please connect again with another name.\n");
                         Thread.sleep(2500);
-                        disconnect(quietlly);
+                        disconnect(ChatConstant.quietlly);
                     }
                     Thread.sleep(1);
                 }
@@ -96,12 +91,12 @@ public class Client extends javax.swing.JFrame {
             disableButtons();
             isConneceted = false;
             //if neaded, alerts online cliens about disconnection.
-            if (method == alertAll && writer != null) {
-                send(name + has_disconnected);
+            if (method == ChatConstant.alertAll && writer != null) {
+                send(name + ChatConstant.has_disconnected);
             }
-            txtareaLog.setText(empty);
-            txtareaMsg.setText(empty);
-            txtClientName.setText(empty);
+            txtareaLog.setText(ChatConstant.empty);
+            txtareaMsg.setText(ChatConstant.empty);
+            txtClientName.setText(ChatConstant.empty);
             txtAddress.setEditable(true);
             //closing socket.
             try {
@@ -553,7 +548,7 @@ public class Client extends javax.swing.JFrame {
      * @param evt clear button.
      */
     private void btnClearLogActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClearLogActionPerformed
-        txtareaLog.setText(empty);
+        txtareaLog.setText(ChatConstant.empty);
     }//GEN-LAST:event_btnClearLogActionPerformed
     /**
      * Clears the message text.
@@ -561,7 +556,7 @@ public class Client extends javax.swing.JFrame {
      * @param evt clear button.
      */
     private void btnClearMsgActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClearMsgActionPerformed
-        txtareaMsg.setText(empty);
+        txtareaMsg.setText(ChatConstant.empty);
     }//GEN-LAST:event_btnClearMsgActionPerformed
     /**
      * action listener that call client to disconnect.
@@ -569,7 +564,7 @@ public class Client extends javax.swing.JFrame {
      * @param evt disconnect button.
      */
     private void btnDissconnectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDissconnectActionPerformed
-        disconnect(alertAll);
+        disconnect(ChatConstant.alertAll);
     }//GEN-LAST:event_btnDissconnectActionPerformed
     /**
      * Establishes clients socket to the server and calls a thread thats job
@@ -583,10 +578,10 @@ public class Client extends javax.swing.JFrame {
             //Getting Client's name & address from txt field:
             name = txtName.getText();
             ip = txtAddress.getText();
-            if (ip.equals(empty)) {
+            if (ip.equals(ChatConstant.empty)) {
                 ip = "localhost";
             }
-            if (name.equals(empty)) {
+            if (name.equals(ChatConstant.empty)) {
                 txtareaLog.append("<System>: Please enter a user name.\n");
                 return;
             }
@@ -606,17 +601,17 @@ public class Client extends javax.swing.JFrame {
                 isConneceted = true;
                 System.out.println("Client: sending my name to sever..");
                 //Sending this client's name to server.
-                send(_connect + del + name);
+                send(ChatConstant._connect + ChatConstant.del + name);
                 //closing 'writer', 'reader' and 'scoket' is done in disconnect(). 
             } catch (UnknownHostException e) {
                 this.txtareaLog.append("Don't know about this host\n");
-                disconnect(alertAll);
+                disconnect(ChatConstant.alertAll);
                 return;
             } catch (IOException e) {
                 this.txtareaLog.append("<System>: the server is currently offline.\n");
                 this.txtareaLog.append("<System>: Please try again later.");
                 e.printStackTrace();
-                disconnect(alertAll);
+                disconnect(ChatConstant.alertAll);
                 return;
             }
             System.out.println("Client: created socket listening thread.");
@@ -638,14 +633,14 @@ public class Client extends javax.swing.JFrame {
         //Gettting the typed message.
         String msg = txtareaMsg.getText();
         //Case 0: message empty.
-        if (msg.equals(empty)) {
+        if (msg.equals(ChatConstant.empty)) {
             frame_noMsgTyped();
             return;
         } //Case 1: 'msg' is to be sent to all clients:
         else if (radiobtnAllClients.isSelected()) {
             // sending: 'send to everyone: msg'.
-            send(send_to + everyone + dots + msg);
-            txtareaMsg.setText(empty);
+            send(ChatConstant.send_to + ChatConstant.everyone + ChatConstant.dots + msg);
+            txtareaMsg.setText(ChatConstant.empty);
         } //Case 2: 'msg' is to be sent to the chosen client:
         else if (radiobtnClient.isSelected()) {
             String resipient = "<" + txtClientName.getText() + ">";
@@ -655,8 +650,8 @@ public class Client extends javax.swing.JFrame {
             } //Case 2.2: send msg with resipient.
             else {
                 //sending: 'send to [recipient name] : msg'.
-                send(send_to + resipient + del + dots + msg);
-                txtareaMsg.setText(empty);
+                send(ChatConstant.send_to + resipient + ChatConstant.del + ChatConstant.dots + msg);
+                txtareaMsg.setText(ChatConstant.empty);
             }
         } //Case 3: No radio button(sending method) was selected.
         else {
@@ -670,12 +665,12 @@ public class Client extends javax.swing.JFrame {
      */
     private void btnShowOnlineActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnShowOnlineActionPerformed
         System.out.println("Client: I want a list of online clients please.");
-        send(get_all_names);
+        send(ChatConstant.get_all_names);
     }//GEN-LAST:event_btnShowOnlineActionPerformed
 
     private void radiobtnAllClientsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_radiobtnAllClientsActionPerformed
         txtareaMsg.setEnabled(true);
-        txtClientName.setText(empty);
+        txtClientName.setText(ChatConstant.empty);
         txtClientName.setEditable(false);
     }//GEN-LAST:event_radiobtnAllClientsActionPerformed
 
@@ -697,7 +692,7 @@ public class Client extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
-        disconnect(alertAll);
+        disconnect(ChatConstant.alertAll);
     }//GEN-LAST:event_formWindowClosing
 
     /**
